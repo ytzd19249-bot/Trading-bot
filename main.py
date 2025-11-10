@@ -1,10 +1,10 @@
 import os
 import logging
 import asyncio
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from pydantic import BaseModel
 import ccxt
-import psycopg2
+import psycopg
 import requests
 from datetime import datetime
 
@@ -32,9 +32,9 @@ MIN_VOLUME_USDT = float(os.getenv("MIN_VOLUME_USDT", "50"))
 
 # === CONEXIÓN BINANCE ===
 exchange = ccxt.binance({
-    'apiKey': BINANCE_API_KEY,
-    'secret': BINANCE_SECRET_KEY,
-    'enableRateLimit': True,
+    "apiKey": BINANCE_API_KEY,
+    "secret": BINANCE_SECRET_KEY,
+    "enableRateLimit": True,
 })
 exchange.set_sandbox_mode(DRY_RUN)
 
@@ -43,7 +43,7 @@ logger.info(f"🔗 Conectado a Binance ({'MODO SIMULACIÓN' if DRY_RUN else 'REA
 # === CONEXIÓN A LA BASE DE DATOS ===
 def get_db_connection():
     try:
-        conn = psycopg2.connect(DATABASE_URL)
+        conn = psycopg.connect(DATABASE_URL)
         return conn
     except Exception as e:
         logger.error(f"❌ Error conectando a la base de datos: {e}")
@@ -69,7 +69,7 @@ async def analyze_and_trade():
     logger.info("🔍 Analizando mercado...")
     for symbol in SYMBOLS:
         try:
-            ohlcv = exchange.fetch_ohlcv(symbol, timeframe='1m', limit=50)
+            ohlcv = exchange.fetch_ohlcv(symbol, timeframe="1m", limit=50)
             closes = [c[4] for c in ohlcv]
             last_close = closes[-1]
             avg = sum(closes) / len(closes)
@@ -84,7 +84,7 @@ async def analyze_and_trade():
             logger.info(f"{symbol} → Señal: {signal} | Precio: {last_close:.2f}")
             if not DRY_RUN and signal in ["BUY", "SELL"]:
                 balance = exchange.fetch_balance()
-                usdt_balance = balance['total'].get('USDT', 0)
+                usdt_balance = balance["total"].get("USDT", 0)
                 trade_amount = (usdt_balance * TRADE_PERCENTAGE) / last_close
                 if trade_amount * last_close >= MIN_VOLUME_USDT:
                     order = exchange.create_market_order(symbol, signal.lower(), trade_amount)
